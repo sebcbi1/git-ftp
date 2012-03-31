@@ -1,0 +1,33 @@
+git-ftp - Upload by FTP the modified files from your last commit
+
+Dependencies: lftp
+
+Installation
+------------
+
+Copy the script insie you path . i.e.
+
+	cp git-ftp /usr/local/bin
+
+Make it executable:
+
+	chmod +x /usr/local/bin/git-ftp
+
+Configuration
+-------------
+
+Inside you project path, setup your ftp credentials
+
+	git config ftp.host 'url'
+	git config ftp.user 'user'
+	git config ftp.pass 'pass'
+
+In addition, you may want to create an alias 
+
+	git config --global alias.deploy '!git push && git-ftp'
+
+
+Usage
+-----
+
+	git deploy
