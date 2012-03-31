@@ -1,0 +1,94 @@
+#!/bin/bash
+#                          
+# name		: git-ftp  
+# author	: sebcbi1  
+# version	: 0.1      
+# created	: 2012-03-24
+# modified	: 2012-03-24
+#		   
+
+author=$(git config --get user.name)
+ftphost=$(git config --get ftp.host)
+ftpuser=$(git config --get ftp.user)
+ftppass=$(git config --get ftp.pass)
+
+tmpfile="./tmp/last-uploaded-revision"
+
+
+# some checking ...
+
+errors=false
+
+if [[ `which lftp 2>/dev/null` = "" ]]; then
+	echo "Please install lftp."
+	errors=true
+fi
+
+if [[ "$author" = "" ]]; then
+	echo "Please set your git user.name variable."
+	errors=true
+fi
+
+if [[ "$ftphost" = "" ]]; then
+        echo "Please set your git ftp.host variable."
+        errors=true
+fi
+
+if [[ "$ftpuser" = "" ]]; then
+        echo "Please set your git ftp.user variable."
+        errors=true
+fi
+
+if [[ "$ftppass" = "" ]]; then
+        echo "Please set your git ftp.pass variable."
+        errors=true
+fi
+
+if $errors; then
+	exit
+fi;
+
+# Retrieving last user commit 
+
+commit=$(git log -1 --author=$author | sed -n 1p | sed -e 's/commit //')
+
+if [[ "$commit" != "" ]]; then
+	
+	# Check if already uploaded
+	
+	if [[ -e $tmpfile ]]; then
+		lastupload=$(cat $tmpfile)
+		if [[ $lastupload = $commit ]]; then
+			descr=$(git log $commit --oneline | sed -n 1p)
+			echo "Revision '$descr' already uploaded."
+			echo -n "Do you wish to re-upload files ? (y/N) "
+			read a
+			if [[ ($a != "y") && ($a != "Y") ]]; then
+				exit
+			fi
+		fi
+	fi
+	
+	# Building file list from last commit of user
+	
+	files=""
+	for i in `git show $commit --pretty="format:" --name-only | sed '/^$/d'|sort|uniq`; 
+	do
+		if [[ -e $i ]]; then
+			echo "Uploading: $i"
+			files=$files"put $i\n"
+		fi
+	done
+	
+	# Uploading to ftp
+	
+	lftp -u $ftpuser,$ftppass $ftphost <<EOF
+	`echo -e $files`
+	quit 0
+	EOF
+	
+	# Saving tranferred commit
+	
+	echo $commit > $tmpfile
+
+fi
