@@ -22,7 +22,9 @@ Inside you project path, setup your ftp credentials
 	git config ftp.user 'user'
 	git config ftp.pass 'pass'
 
-In addition, you may want to create an alias 
+In addition, you may want to create some alias 
+
+	git config --global alias.ftp '!git-ftp'
 
 	git config --global alias.deploy '!git push && git-ftp'
 
@@ -30,4 +32,10 @@ In addition, you may want to create an alias
 Usage
 -----
 
+	git-ftp
+
+	git ftp
+	
+		or
+	
 	git deploy

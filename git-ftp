@@ -2,9 +2,9 @@
 #                          
 # name		: git-ftp  
 # author	: sebcbi1  
-# version	: 0.1      
-# created	: 2012-03-24
-# modified	: 2012-03-24
+# version	: 0.2      
+# created	: 2012-03-30
+# modified	: 2012-04-02
 #		   
 
 author=$(git config --get user.name)
