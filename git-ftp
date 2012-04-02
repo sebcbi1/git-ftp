@@ -54,12 +54,13 @@ commit=$(git log -1 --author=$author | sed -n 1p | sed -e 's/commit //')
 
 if [[ "$commit" != "" ]]; then
 	
+	descr=$(git log $commit --oneline | sed -n 1p)
+
 	# Check if already uploaded
-	
+
 	if [[ -e $tmpfile ]]; then
 		lastupload=$(cat $tmpfile)
 		if [[ $lastupload = $commit ]]; then
-			descr=$(git log $commit --oneline | sed -n 1p)
 			echo "Revision '$descr' already uploaded."
 			echo -n "Do you wish to re-upload files ? (y/N) "
 			read a
@@ -70,22 +71,32 @@ if [[ "$commit" != "" ]]; then
 	fi
 	
 	# Building file list from last commit of user
+
+	echo "Revision '$descr' will be uploaded."
+	echo 
 	
 	files=""
 	for i in `git show $commit --pretty="format:" --name-only | sed '/^$/d'|sort|uniq`; 
 	do
 		if [[ -e $i ]]; then
-			echo "Uploading: $i"
-			files=$files"put $i\n"
+			echo "$i"
+			files=$files"mput -d $i\n"
 		fi
 	done
+
+	echo
+	echo -n "Continue ? (y/N) "
+	read a
+	if [[ ($a != "y") && ($a != "Y") ]]; then
+		exit
+	fi
 	
 	# Uploading to ftp
 	
-	lftp -u $ftpuser,$ftppass $ftphost <<EOF
-	`echo -e $files`
-	quit 0
-	EOF
+lftp -u $ftpuser,$ftppass $ftphost <<EOF
+`echo -e $files`
+quit 0
+EOF
 	
 	# Saving tranferred commit
 	
