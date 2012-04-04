@@ -2,15 +2,16 @@
 #                          
 # name		: git-ftp  
 # author	: sebcbi1  
-# version	: 0.2      
+# version	: 0.3      
 # created	: 2012-03-30
-# modified	: 2012-04-02
+# modified	: 2012-04-04
 #		   
 
 author=$(git config --get user.name)
 ftphost=$(git config --get ftp.host)
 ftpuser=$(git config --get ftp.user)
 ftppass=$(git config --get ftp.pass)
+ftpcd=$(git config --get ftp.basedir)
 
 tmpfile="./tmp/last-uploaded-revision"
 
@@ -50,11 +51,26 @@ fi;
 
 # Retrieving last user commit 
 
-commit=$(git log -1 --author=$author | sed -n 1p | sed -e 's/commit //')
+commit=$(git log -1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+descr=$(git log $commit --oneline | sed -n 1p)
+files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
 
-if [[ "$commit" != "" ]]; then
-	
+if [[ "$files" = "" ]]; then
+
+	echo "Revision '$descr' has no modified files"
+	echo "Maybe an empty merge, trying the previous one ..."
+	commit=$(git log -1 --skip=1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+	files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
 	descr=$(git log $commit --oneline | sed -n 1p)
+
+fi
+
+
+if [[ "$commit" = "" || "$files" = "" ]]; then
+	
+	echo "Nothing to upload"
+
+else
 
 	# Check if already uploaded
 
@@ -70,17 +86,26 @@ if [[ "$commit" != "" ]]; then
 		fi
 	fi
 	
+	
+	# base directory
+
+	ftpcmds=""
+
+	if [[ "$ftpcd" != "" ]]; then
+		ftpcmds="cd $ftpcd\n"
+	fi
+
 	# Building file list from last commit of user
 
 	echo "Revision '$descr' will be uploaded."
 	echo 
-	
-	files=""
+
+
 	for i in `git show $commit --pretty="format:" --name-only | sed '/^$/d'|sort|uniq`; 
 	do
 		if [[ -e $i ]]; then
 			echo "$i"
-			files=$files"mput -d $i\n"
+			ftpcmds=$ftpcmds"mput $ftpbase -d $i\n"
 		fi
 	done
 
@@ -92,9 +117,9 @@ if [[ "$commit" != "" ]]; then
 	fi
 	
 	# Uploading to ftp
-	
+
 lftp -u $ftpuser,$ftppass $ftphost <<EOF
-`echo -e $files`
+`echo -e $ftpcmds`
 quit 0
 EOF
 	

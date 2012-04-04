@@ -22,6 +22,10 @@ Inside you project path, setup your ftp credentials
 	git config ftp.user 'user'
 	git config ftp.pass 'pass'
 
+	optionally:
+
+	git config ftp.basedir 'remote_base_dir'
+
 In addition, you may want to create some alias 
 
 	git config --global alias.ftp '!git-ftp'
