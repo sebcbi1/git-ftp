@@ -41,8 +41,16 @@ if [[ "$ftpuser" = "" ]]; then
 fi
 
 if [[ "$ftppass" = "" ]]; then
-        echo "Please set your git ftp.pass variable."
-        errors=true
+	echo -n "Enter FTP password: "
+	stty -echo
+	read ftppass
+	stty echo
+	echo ""
+fi
+
+if [[ "$ftppass" = "" ]]; then
+	echo "Aborting"
+	errors=true
 fi
 
 if $errors; then
