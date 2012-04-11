@@ -40,6 +40,10 @@ if [[ "$ftpuser" = "" ]]; then
         errors=true
 fi
 
+if $errors; then
+	exit
+fi;
+
 if [[ "$ftppass" = "" ]]; then
 	echo -n "Enter FTP password: "
 	stty -echo
