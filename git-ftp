@@ -63,7 +63,7 @@ fi;
 
 # Retrieving last user commit 
 
-commit=$(git log -1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+commit=$(git log -1 --no-merges --author="$author" | sed -n 1p | sed -e 's/commit //')
 descr=$(git log $commit --oneline | sed -n 1p)
 files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
 
@@ -71,7 +71,7 @@ if [[ "$files" = "" ]]; then
 
 	echo "Revision '$descr' has no modified files"
 	echo "Maybe an empty merge, trying the previous one ..."
-	commit=$(git log -1 --skip=1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+	commit=$(git log -1 --no-merges --skip=1 --author="$author" | sed -n 1p | sed -e 's/commit //')
 	files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
 	descr=$(git log $commit --oneline | sed -n 1p)
 
