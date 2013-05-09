@@ -1,4 +1,4 @@
-git-ftp - Upload by FTP the modified files from your last commit
+git-ftp - Upload by FTP the modified files from your last commit or from commit
 
 Dependencies: lftp
 
@@ -43,3 +43,5 @@ Usage
 		or
 	
 	git deploy
+
+	git ftp be29a36bd4b2e8badf1e041b83173bc1cfc3abdf will upload all modified files after this commit till last commit
