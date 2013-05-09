@@ -2,15 +2,16 @@
 #                          
 # name		: git-ftp  
 # author	: sebcbi1  
-# version	: 0.3      
+# version	: 0.4      
 # created	: 2012-03-30
-# modified	: 2012-04-04
+# modified	: 2013-05-09
 #		   
 
 author=$(git config --get user.name)
 ftphost=$(git config --get ftp.host)
 ftpuser=$(git config --get ftp.user)
 ftppass=$(git config --get ftp.pass)
+ftpport=$(git config --get ftp.port)
 ftpcd=$(git config --get ftp.basedir)
 
 tmpfile="./tmp/last-uploaded-revision"
@@ -40,6 +41,10 @@ if [[ "$ftpuser" = "" ]]; then
         errors=true
 fi
 
+if [[ "$ftpport" = "" ]]; then
+	ftpport="21"
+fi
+
 if $errors; then
 	exit
 fi;
@@ -61,28 +66,32 @@ if $errors; then
 	exit
 fi;
 
-# Retrieving last user commit 
+# if commit passed as parameter retrieve all modified files AFTER this commit till now
 
-commit=$(git log -1 --no-merges --author="$author" | sed -n 1p | sed -e 's/commit //')
-descr=$(git log $commit --oneline | sed -n 1p)
-files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
-
-if [[ "$files" = "" ]]; then
-
-	echo "Revision '$descr' has no modified files"
-	echo "Maybe an empty merge, trying the previous one ..."
-	commit=$(git log -1 --no-merges --skip=1 --author="$author" | sed -n 1p | sed -e 's/commit //')
-	files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d')
-	descr=$(git log $commit --oneline | sed -n 1p)
-
-fi
-
-
-if [[ "$commit" = "" || "$files" = "" ]]; then
-	
-	echo "Nothing to upload"
-
+if [[ "$1" != "" ]]; then
+	files=$(git diff --name-only $1);
 else
+
+	# Retrieving last user commit 
+
+	commit=$(git log -1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+	descr=$(git log $commit --oneline | sed -n 1p)
+	files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d'|sort|uniq)
+
+	if [[ "$files" = "" ]]; then
+
+		echo "Revision '$descr' has no modified files"
+		echo "Maybe an empty merge, trying the previous one ..."
+		commit=$(git log -1 --skip=1 --author="$author" | sed -n 1p | sed -e 's/commit //')
+		files=$(git show $commit --pretty="format:" --name-only | sed '/^$/d ' |sort|uniq)
+		descr=$(git log $commit --oneline | sed -n 1p)
+
+	fi
+
+	if [[ "$commit" = "" ]]; then
+		echo "Nothing to upload"
+		exit
+	fi
 
 	# Check if already uploaded
 
@@ -97,6 +106,24 @@ else
 			fi
 		fi
 	fi
+
+	echo "Revision '$descr' will be uploaded."
+	echo 
+
+	# Saving tranferred commit
+	
+	echo $commit > $tmpfile
+
+
+fi 
+
+# Uploading
+
+if [[ "$files" = "" ]]; then
+	
+	echo "Nothing to upload"
+
+else
 	
 	
 	# base directory
@@ -109,11 +136,10 @@ else
 
 	# Building file list from last commit of user
 
-	echo "Revision '$descr' will be uploaded."
+	echo "The following files will be uploaded:"
 	echo 
 
-
-	for i in `git show $commit --pretty="format:" --name-only | sed '/^$/d'|sort|uniq`; 
+	for i in $files; 
 	do
 		if [[ -e $i ]]; then
 			echo "$i"
@@ -130,13 +156,10 @@ else
 	
 	# Uploading to ftp
 
-lftp -u $ftpuser,$ftppass $ftphost <<EOF
-`echo -e $ftpcmds`
+lftp -p $ftpport -u $ftpuser,$ftppass $ftphost <<EOF
+`echo -e "$ftpcmds"`
 quit 0
 EOF
 	
-	# Saving tranferred commit
 	
-	echo $commit > $tmpfile
-
 fi
